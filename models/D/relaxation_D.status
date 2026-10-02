@@ -1,0 +1,3 @@
+STARTED: no corrected relaxation/MD result yet
+STATIC_STARTED: full physical charges, fixed cell
+FAIL shells_fixed_cores Fmax_N=1.49071601637165e-10; MD NOT STARTED
