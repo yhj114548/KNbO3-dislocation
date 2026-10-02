@@ -1,60 +1,68 @@
-# KNbO3 Dislocation Simulations with a Core-Shell Model
+# KNbO3 Dislocations in LAMMPS
 
-This project develops LAMMPS models of Type A-E dislocations in potassium niobate (KNbO3) using a core-shell interatomic model.
+**An open research collaboration to adapt Type A-E dislocation geometries to KNbO3 using a polarizable core-shell model.**
 
-The dislocation classification and simulation strategy are inspired by Klomp, Porz, and Albe's atomistic study of Type A-E dislocations in SrTiO3. The goal here is to transfer that framework to KNbO3 and investigate how a polarizable core-shell description affects dislocation-core structure, dissociation, stability, and mobility.
+The structural reference is Klomp, Porz and Albe's study of dislocations in **SrTiO3**. Our target material is **KNbO3**. We aim to construct and validate the five geometries, then investigate core structure, dissociation, stability and mobility. The paper uses fixed effective ionic charges; these KNbO3 models use a core-shell description. Similar geometry does not imply identical material behavior.
 
-## Research goals
+**Start here:** [small Type A example](docs/QUICKSTART.md) · [model status](docs/STATUS.md) · [contribution guide](CONTRIBUTING.md) · [open tasks](https://github.com/yhj114548/KNbO3-dislocation/issues)
 
-- Build reproducible KNbO3 structures for Type A, B, C, D, and E dislocations.
-- Implement the simulations in LAMMPS with a KNbO3 core-shell potential.
-- Relax and compare the five dislocation-core configurations.
-- Examine glide or climb dissociation where applicable.
-- Evaluate the effects of polarization, core charge, temperature, and applied stress.
-- Compare the KNbO3 results with the SrTiO3 behavior reported in the reference paper.
+![Small unrelaxed Type A construction viewed along the line direction](docs/type-a-preview.svg)
 
-## Scientific background
+*A small geometry preview built from the supplied Type A builder. This is an initial structure, not a relaxed core or a measured result.*
 
-The reference study models five prominent dislocation types in cubic SrTiO3. It reports that Types A-C share a {1-10} glide plane and can exhibit glide dissociation, whereas Types D and E have different glide planes and substantially higher barriers to motion. Because KNbO3 is ferroelectric and strongly polarizable, a core-shell model may reveal behavior that is not captured by the fixed-effective-charge model used for SrTiO3.
+## Try a small example
 
-This repository treats the SrTiO3 results as a structural and methodological reference, not as an assumption that KNbO3 will behave identically.
+```bash
+git clone https://github.com/yhj114548/KNbO3-dislocation.git
+cd KNbO3-dislocation
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install numpy
+python examples/type_a_preview.py
+```
 
-## Repository contents
+This creates 1,320 particles (660 core-shell pairs) in `runs/type-a-preview/CONFIG.A`. Open it in OVITO, or follow the [optional LAMMPS initial-force check](docs/QUICKSTART.md). The tiny cell is for inspecting the workflow, not quantitative dislocation physics.
 
-- `20260205-KNO_ts_0.001_tri (copy).zip`: reference KNbO3 core-shell LAMMPS model
-- `A.zip`: Type A dislocation model
-- `B.zip`: Type B dislocation model
-- `C.zip`: Type C dislocation model
-- `D.zip`: Type D dislocation model
-- `E (copy).zip`: Type E dislocation model
-- `2023-ActaMater-Klomp.pdf`: reference paper
+## Help wanted
 
-The files are currently distributed as archives. A planned next step is to unpack them into documented directories so that inputs, structures, and analysis scripts can be reviewed and improved directly on GitHub.
+Experienced atomistic researchers and contributors improving documentation or analysis tools are welcome.
 
-## How to contribute
+- **Core-shell validation:** charges, masses, springs, potential provenance, temperature/pressure definitions and timestep convergence.
+- **Crystallography:** Burgers circuits, line directions, slip planes, periodic dipoles and local core stoichiometry.
+- **Input recovery:** restore unreadable Type B source files from a known-good copy.
+- **Reproducibility:** document runs and develop OVITO/Python visualization workflows.
 
-Contributions are welcome from researchers and developers working on LAMMPS, core-shell potentials, ferroelectric perovskites, atomistic dislocation modeling, and visualization.
+Pick a task in [Issues](https://github.com/yhj114548/KNbO3-dislocation/issues), comment with your approach, and submit a focused pull request. Small, documented contributions are useful.
 
-Useful contributions include:
+## Files and provenance
 
-- checking the crystallographic construction of Types A-E;
-- validating the KNbO3 core-shell parameters and LAMMPS settings;
-- improving relaxation and loading protocols;
-- checking charge neutrality and core-shell initialization;
-- adding OVITO or Python analysis workflows;
-- calculating dislocation energies, dissociation distances, and Peierls stresses;
-- documenting reproducible runs and comparing the five configurations.
+| Location | Contents |
+| --- | --- |
+| `models/A` to `models/E` | Available UTF-8 source/input files extracted from the archives for direct review |
+| `models/reference` | Small input files from the 20260205 baseline archive |
+| `examples` | Small Type A construction and initial-force check |
+| `docs/archive-audit.json` | Archive hashes, byte-preserved source provenance and unreadable entries |
+| Root ZIP archives | Original packages, available large configurations and historical output |
 
-Please open an Issue to discuss a proposed change or a Pull Request with a focused improvement. When reporting results, include the LAMMPS version, potential parameters, boundary conditions, temperature, timestep, minimization or thermostat settings, and the exact input files used.
+Extracted sources retain their original bytes and parameters. Large generated `CONFIG.*` files remain in their archives where supplied. Historical output does not prove that current inputs have converged. The PDF is not currently present in the repository; use the publication link below.
 
-## Project status
+## Current status
 
-This is an early-stage research repository. The Type A-E input sets are under development and still require systematic validation. Results should not yet be treated as benchmark data.
+This is an early-stage research project. A small geometry and initial-force check are reproducible; a validated Type A-E production benchmark is still a goal.
 
-## Reference
+- A and C have recorded static-preparation failures before MD.
+- D has a recorded static failure and its archive omits `CONFIG.D`.
+- B contains 13 small entries filled with `0xFF` bytes; recovery is required.
+- E includes an older stabilization protocol needing independent review.
 
-A. J. Klomp, L. Porz, and K. Albe, "The nature and motion of deformation-induced dislocations in SrTiO3: Insights from atomistic simulations," *Acta Materialia* 242 (2023) 118404. https://doi.org/10.1016/j.actamat.2022.118404
+See [STATUS](docs/STATUS.md) for evidence and limits. Converged dislocation energies, polarization changes and Peierls stresses are not yet established.
 
-## License and citation
+## Reference and citation
 
-A project license and `CITATION.cff` file will be added before the repository is presented as a reusable research package. Until then, please contact the repository owner before reusing unpublished KNbO3 model files or results.
+A. J. Klomp, L. Porz and K. Albe, *The nature and motion of deformation-induced dislocations in SrTiO3: Insights from atomistic simulations*, Acta Materialia **242** (2023), 118404. [DOI](https://doi.org/10.1016/j.actamat.2022.118404).
+
+See [CITATION.cff](CITATION.cff) to cite this repository. Cite the paper separately when using its classification or methodology.
+
+## Reuse
+
+A code license has not yet been selected. Discuss reuse and licensing with the maintainer in an Issue. Third-party papers and potential parameter sources retain their own terms and attribution requirements.
