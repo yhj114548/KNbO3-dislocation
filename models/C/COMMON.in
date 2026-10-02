@@ -1,0 +1,113 @@
+# Shared execution for Type A and C. Start via IN_A or IN_C in its folder.
+include SETTINGS.in
+units metal
+atom_style full
+boundary p p p
+read_data CONFIG.${TYPE} nocoeff
+change_box all triclinic
+include Param_KNO
+neighbor 2.0 bin
+neigh_modify every 1 delay 0 check yes one 6000 page 300000
+comm_modify vel yes
+group cores type 1 2 3
+group shells type 4 5 6
+compute Tcs all temp/cs cores shells
+compute_modify Tcs extra/dof 3
+compute Tatoms all temp
+compute Pcs all pressure Tatoms
+thermo ${dNout}
+shell mkdir -p cfg
+include RELAX.in
+reset_timestep 0
+timestep ${del_t}
+# Internal oscillator KE is a diagnostic, separate from pair COM temperature.
+compute KEparticles all ke
+# The 2025 temp/cs tensor includes particle KE. Use scalar COM temperature,
+# not the tensor, to subtract COM KE. All ions are paired, DOF=3*Nions-3.
+variable DOFcs equal 3*count(cores)-3
+variable KEcom_J equal 0.5*v_DOFcs*1.380649e-23*c_Tcs
+variable KEinternal_J equal c_KEparticles*1.602176634e-19-v_KEcom_J
+thermo_style custom step time etotal ke pe ebond ecoul temp press vol v_Fmax_N v_Bmax_m v_KEinternal_J
+thermo_modify temp Tcs press Pcs lost error flush yes
+# Give each core-shell pair COM motion without thermalizing relative motion.
+velocity all set 0.0 0.0 0.0
+velocity all create 5.0 1 mom yes rot yes dist gaussian bias yes temp Tcs
+velocity all scale 5.0 temp Tcs
+fix settle all nvt temp 5.0 5.0 ${Tdamp}
+fix_modify settle temp Tcs
+fix drift all momentum 100 linear 1 1 1
+run ${Nsettle}
+if "$(v_bad > 0)" then &
+ "write_data CONFIG.${TYPE}_MD_failed pair ij" &
+ "print 'FAIL settling' append relaxation_${TYPE}.status" &
+ "print 'STOP_WITH_CHECKPOINT' append relaxation_${TYPE}.status" &
+ "quit 1"
+unfix settle
+write_data CONFIG.${TYPE}_settled pair ij
+reset_timestep 0
+velocity all create ${Tmeas} 12345 mom yes rot yes dist gaussian bias yes temp Tcs
+velocity all scale ${Tmeas} temp Tcs
+fix bar all npt temp ${Tmeas} ${Tmeas} ${Tdamp} tri 0.0 0.0 ${Pdamp} drag 1.0
+fix_modify bar temp Tcs press Pcs
+# Absolute periodic dipole is branch dependent; diagnostic only.
+compute pol all dipole
+variable Plx_SI equal c_pol[1]/vol*16.02176634
+variable Ply_SI equal c_pol[2]/vol*16.02176634
+variable Plz_SI equal c_pol[3]/vol*16.02176634
+variable Plmag_SI equal sqrt(v_Plx_SI*v_Plx_SI+v_Ply_SI*v_Ply_SI+v_Plz_SI*v_Plz_SI)
+# Output time in s, energy in J, stress in Pa, lengths in m, volume in m^3.
+variable stepout equal step
+variable tout equal time*1.0e-12
+variable tempout equal c_Tcs
+variable KE_J equal c_KEparticles*1.602176634e-19
+variable PE_J equal pe*1.602176634e-19
+variable EB_J equal ebond*1.602176634e-19
+variable pxx_Pa equal pxx*1.0e5
+variable pyy_Pa equal pyy*1.0e5
+variable pzz_Pa equal pzz*1.0e5
+variable p_Pa equal press*1.0e5
+variable vol_m3 equal vol*1.0e-30
+variable lx_m equal lx*1.0e-10
+variable ly_m equal ly*1.0e-10
+variable lz_m equal lz*1.0e-10
+variable xy_m equal xy*1.0e-10
+variable xz_m equal xz*1.0e-10
+variable yz_m equal yz*1.0e-10
+dump cfgout cores cfg ${dNcfg} cfg/MD_${TYPE}_*.cfge mass type xs ys zs id mol q
+dump_modify cfgout element K Nb O K Nb O
+fix engout all print ${dNout} "${stepout} ${tout} ${tempout} ${KE_J} ${PE_J} ${EB_J} ${KEinternal_J}" &
+ screen no file energy.d title "# step time_s T_K KE_particles_J PE_J Ebond_J KEinternal_J"
+fix strout all print ${dNout} "${stepout} ${tout} ${tempout} ${pxx_Pa} ${pyy_Pa} ${pzz_Pa} ${p_Pa}" &
+ screen no file stress.d title "# step time_s T_K Pxx_Pa Pyy_Pa Pzz_Pa pressure_Pa"
+fix cllout all print ${dNout} "${stepout} ${tout} ${tempout} ${vol_m3} ${lx_m} ${ly_m} ${lz_m} ${xy_m} ${xz_m} ${yz_m}" &
+ screen no file cell.d title "# step time_s T_K volume_m3 lx_m ly_m lz_m xy_m xz_m yz_m"
+fix polout all print ${dNout} "${stepout} ${tout} ${tempout} ${Plx_SI} ${Ply_SI} ${Plz_SI} ${Plmag_SI}" &
+ screen no file pol.d title "# DIAGNOSTIC step time_s T_K Px_C_per_m2 Py_C_per_m2 Pz_C_per_m2 Pmag_C_per_m2"
+run ${Nequil}
+if "$(v_bad > 0)" then &
+ "write_data CONFIG.${TYPE}_MD_failed pair ij" &
+ "print 'FAIL equilibration' append relaxation_${TYPE}.status" &
+ "print 'STOP_WITH_CHECKPOINT' append relaxation_${TYPE}.status" &
+ "quit 1"
+write_data CONFIG.${TYPE}_equilibrated pair ij
+# A separate equal-length defect-free reference is required for dislocation energy.
+variable peinst equal pe
+fix avpe all ave/time ${Navg_every} ${Navg_repeat} ${Navg_freq} v_peinst
+fix avpl all ave/time ${Navg_every} ${Navg_repeat} ${Navg_freq} v_Plmag_SI
+run ${Nmeas}
+if "$(v_bad > 0)" then &
+ "write_data CONFIG.${TYPE}_MD_failed pair ij" &
+ "print 'FAIL production' append relaxation_${TYPE}.status" &
+ "print 'STOP_WITH_CHECKPOINT' append relaxation_${TYPE}.status" &
+ "quit 1"
+variable natoms equal count(all)
+variable nions equal count(cores)
+variable pe_total_J equal f_avpe*1.602176634e-19
+variable pe_per_ion_J equal v_pe_total_J/v_nions
+variable Pl_avg equal f_avpl
+print "RESULT type${TYPE} Nparticles=${natoms} Nions=${nions} PE_total_J=${pe_total_J} PE_per_ion_J=${pe_per_ion_J} Pmag_diagnostic_Cm2=${Pl_avg}" &
+ file pe_type${TYPE}.dat screen yes
+write_data CONFIG.${TYPE}_relaxed pair ij
+write_dump cores cfg cfg/MD_${TYPE}_final.cfge mass type xs ys zs id mol q &
+ modify element K Nb O K Nb O
+print "MD_COMPLETE: inspect defect topology, shell internal KE, phase and equilibrium" append relaxation_${TYPE}.status
