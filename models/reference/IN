@@ -1,0 +1,91 @@
+##/bin/bash
+
+units           metal
+atom_style      full      # supports charge + bonds
+boundary        p p p
+# processors	2 2 2
+# read data (you must supply a data file with atoms, bonds)
+read_data	CONFIG.IN
+replicate	10 10 10
+change_box	all triclinic
+
+# ---------- force fields ----------
+include		Param_KNO
+
+# ---------- settings ----------
+neighbor	2.0 bin
+neigh_modify	every 1 delay 0 check yes
+
+comm_modify	vel yes
+
+# ---------- variable ----------
+variable	Temp  equal 800
+variable	Tini  equal 800
+variable	Tend  equal 0.01
+variable	Nstep equal 1e+6
+variable	Ncool equal 1.2e+6
+variable	del_t equal 0.001
+
+variable	dNout equal ${Nstep}/10000
+variable	dNcfg equal ${Nstep}/1000
+variable	Tdamp equal ${del_t}*100
+variable	Pdamp equal ${del_t}*1000
+timestep	${del_t}
+
+# ---------- grouping ----------
+group		cores  type 1 2 3
+group		shells type 4 5 6
+
+# ---------- thermo ----------
+thermo		${dNout}
+thermo_style	custom step time etotal ke pe ebond ecoul temp press
+
+# ---------- compute ----------
+compute		Tcs all temp/cs cores shells
+thermo_modify	temp Tcs
+compute 	Pcs all pressure thermo_temp
+thermo_modify	temp Tcs press Pcs
+
+# ---------- fix ----------
+fix		1 all npt temp ${Temp} ${Temp} ${Tdamp} tri 0 0 ${Pdamp}
+fix_modify	1 temp Tcs press Pcs
+
+# ---------- remove drift ----------
+fix		3 all momentum 100 linear 1 1 1
+
+# ---------- velocity ----------
+velocity	all create ${Temp} 1 bias yes temp Tcs mom yes
+velocity	all scale ${Temp} temp Tcs
+
+# ---------- dumping ---------
+dump		4 cores cfg ${dNcfg} *.cfge mass type xs ys zs id mol q
+dump_modify	4 element K Nb O H H H
+
+
+fix engout all print  ${dNout} "$(step) $(time) $(temp) $(ke) $(pe) $(ebond)" screen no file energy.d
+fix strout all print  ${dNout} "$(step) $(time) $(temp) $(pxx) $(pyy) $(pzz) $(press)" screen no file stress.d
+fix cllout all print  ${dNout} "$(step) $(time) $(temp) $(vol) $(lx) $(ly) $(lz) $(xy) $(xz) $(yz)" screen no file cell.d
+
+run		${Nstep}
+
+write_data	CONFIG.ANNEALED
+
+######################################
+
+unfix		1
+
+# ---------- fix ----------
+fix		1 all npt temp ${Tini} ${Tend} ${Tdamp} tri 0 0 ${Pdamp}
+fix_modify	1 temp Tcs press Pcs
+
+run		${Ncool}
+
+unfix           1
+
+velocity        all set 0 0 0
+fix             relax all box/relax tri 0.0 vmax 0.001
+min_style       cg
+minimize        1.0e-8 1.0e-8 10000 100000
+unfix           relax
+
+write_data	CONFIG.OUT
