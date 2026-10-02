@@ -1,0 +1,468 @@
+##/bin/bash
+
+# =====================================================================
+#  Type E mixed dislocation in KNbO3 (core-shell) : relax + measure PE
+#  b = a<110> (mixed), line t = <100>, glide plane {001}
+#  Reads CONFIG.E produced by make_typeE.py
+# =====================================================================
+#
+# FIX LOG (this revision)
+# ------------------------------------------------------------------
+# dis_E.o317 crashed at step 88 (0.044 ps into the NVE "settle" stage):
+#   "ERROR on proc 62: Bond atoms 252067 252068 missing on proc 62"
+# 252067/252068 is a normal O_core/O_shell bonded pair, sitting exactly
+# at x = x1 (the first dislocation-dipole core line). Step 0 thermo
+# already shows an anomalously large real-space Coulomb energy
+# (E_coul = +8,061,198 eV, ~10.3 eV/atom) even though the total PE
+# (-15.54 eV/atom) is close to Type A's converged -15.81 eV/atom -- i.e.
+# the average structure is reasonable but specific local environments
+# are not, and the original script had no minimization, no safety walls,
+# and no charge ramping before jumping straight into raw NVE dynamics.
+#
+# Two independent diagnostics were run directly on this CONFIG.E:
+#  1) A periodic cKDTree scan of every non-bonded pair in the full
+#     782,810-atom box found NO raw atomic overlaps anywhere -- closest
+#     non-bonded contact = 1.977 A (the ideal Nb-O bond length) even
+#     right at the two dislocation core lines. This rules out the
+#     missing-collision-detection builder bug that Type C had.
+#  2) An oxygen-octahedron-completeness scan (for every Nb_core, is its
+#     6th-nearest O_core close to the ideal 1.977 A shell? -- the same
+#     method used to diagnose Type B) found 710 of 78,281 Nb ions
+#     (0.91%) with an incomplete octahedron -- the same class of
+#     stoichiometry-restoration-deletion side effect documented for
+#     Type B, just less severe (Type B: 2,736/77,788 = 3.5%).
+# Combined with the Type-B-confirmed fact that Nb_shell-O_shell
+# (q=+7.8265/-3.0100) is net-attractive wherever the local Madelung
+# shielding is disrupted, this is the same class of failure as Type B's
+# screw-collapse problem, not a builder geometry bug -- so the fix is to
+# port the full protocol proven there (WCA safety walls, ionic charge
+# ramping, a defect tether, CG-restart minimization) rather than patch
+# around a single atom pair. defect_group_E.txt was freshly generated
+# from *this* CONFIG.E (CONFIG.B's defect list does not apply here --
+# different structure, different atom IDs).
+#
+# Two further issues were found and fixed by running the full corrected
+# pipeline locally (small-scale reproductions, 2,850-19,500 atoms):
+#  3) Even after the static relaxation below converges to a low residual
+#     force (fmax ~2-3 eV/A, well under the 5.0 eV/A CG-loop exit
+#     threshold), switching straight to free 'nve' still broke a
+#     core-shell bond within 2-3 steps -- on an ordinary O_core/O_shell
+#     pair that was NOT among the identified defect sites, so the
+#     defect-tether approach alone cannot catch it. Fixed by running the
+#     settle stage with 'nve/limit' (displacement-capped integration)
+#     for its FULL duration rather than free 'nve': a brief limited
+#     warmup alone was NOT enough (the same bond broke 2 steps after the
+#     cap was lifted), confirming this is a sustained residual force,
+#     not a one-off transient.
+#  4) The original NPT setup (Pdamp=1.0, drag=1.0, no box/relax pre-step)
+#     crashed immediately with "Fix npt has tilted box too far in one
+#     step" -- expected for a dislocation-strained triclinic cell (a
+#     genuine residual shear stress, confirmed directly: Pxy/Pxz/Pyz of
+#     order several hundred bar even after pre-relaxation) hitting an
+#     under-damped barostat. Fixed with a box/relax pre-relaxation step
+#     (restart-looped, since a single box/relax call hits the same
+#     well-documented "linesearch alpha is zero" CG stall as the static
+#     minimization -- it was still cutting residual pressure by ~700x
+#     per pass, just needed a fresh search direction) plus a much larger
+#     Pdamp and drag/nreset/flip settings matching the Parrinello-Rahman
+#     stability requirements already established for this project.
+#     CAVEAT: on the most artificially compressed local test cell (3
+#     unit cells thick, vs. 7 for this real production cell), even a
+#     hardened barostat occasionally still tripped this same safety
+#     check -- plausibly because the check is box-length-relative and
+#     that test cell was unusually thin. This is flagged here rather
+#     than hidden: if "tilted box too far" recurs on the real run,
+#     raising Pdamp further (or lengthening the box/relax loop below) is
+#     the next lever to pull.
+#
+# Round 3 (this revision) -- from the user's actual full-scale run on
+# CONFIG.E (782,810 atoms, job dis_E.o375): rounds 1-2 above worked --
+# static relaxation and settle both completed with no crash (static
+# relaxation plateaued at fmax=28.94 eV/A after exhausting all 15 CG
+# restarts; box/relax plateaued at |press|=988.9 bar after 8 restarts,
+# same "restart stops helping, this is a real local minimum" pattern
+# seen locally) -- but NPT still broke dozens of bonds simultaneously,
+# scattered across many unrelated regions of the box, 2 steps after
+# starting. Diagnosis: box/relax's own minimize, called right after
+# settle, started from a max atomic force of 2904 eV/A -- a ~100x jump
+# from the 28.94 eV/A the static loop had left off at just before
+# settle ran. nve/limit caps displacement, not force, so a persistently
+# large force doesn't break a bond outright during settle, but keeps
+# nudging the same atom the same direction across the whole settle
+# window, drifting it toward a worse local environment -- and *that*
+# residual is what NPT's fresh, hotter (30 K vs. settle's 5 K) velocity
+# kick could not survive. Fix (both added below): (c) a second CG-
+# restart pass right after settle, before box/relax, to re-catch
+# whatever settle's dynamics disturbed; (d) an nve/limit warmup at the
+# start of NPT itself, mirroring the settle-stage fix, since the
+# underlying vulnerability (velocity create -> unconstrained dynamics)
+# is not specific to the settle stage.
+#
+# Round 4 (this revision) -- job dis_E.o384 (782,810 atoms) still broke dozens
+# of bonds simultaneously, 2 steps after leaving nve/limit for fix npt, so
+# rounds 1-3 had treated a symptom. Local reproduction on a 2,850-atom cell:
+# starting from the statically relaxed structure with ZERO initial velocity,
+# free NVE (no thermostat, no barostat) still blew up within ~1 fs, for
+# dt = 0.5, 0.2 and 0.1 fs and for every shell-mass convention tried
+# (original, uniform 2.0 amu, corrected 10%) -- so it is neither a timestep,
+# a thermal-kick, nor a mass problem. Per-atom force dumps showed O_shell
+# forces going 1.7 -> 145 -> 1.5e9 eV/A in two steps, and a pair scan of
+# the "relaxed" structure found collapsed NON-bonded pairs: 24 O_shell-O_shell
+# at 0.78 A, 173 Nb_shell-O_shell at 1.27 A (plus Nb_core-O_shell,
+# O_core-O_shell, O_core-Nb_shell pairs), none of which were in
+# defect_group_E (the 6th-nearest-O criterion does not catch them).
+# Cause: the Type B walls (r_c = 0.67-0.95 A) sit INSIDE the region where the
+# 6-6 Buckingham term is already attractive (collapse onset ~1.25 A at full
+# charge, ~1.5 A at the 10% ramp charges), so they only freeze collapsed
+# pairs in place with a ~1e5 eV/A^2 stiffness that nve/limit hid and free
+# dynamics could not integrate. Fix: wider (r_c 1.5-1.75 A) and much softer
+# (eps 2-15) walls for the 6-6, 5-6 and 2-3 pairs. Result on the local test
+# cell: after static relaxation there are 0 non-bonded pairs closer than
+# 1.7 A (was 350-409), and free NVE from rest / from a 30 K kick ran
+# 3000-6000 steps with no errors. Full IN_E flow (ramp, CG, settle,
+# post-settle CG, box/relax, NPT warmup, NPT, measurement, write_data) also
+# ran to the RESULT line on a 6,650-atom, 7-unit-cell-thick cell with no
+# errors (pe_per_atom = -15.75 eV/atom). NOT yet verified at full scale.
+# The nve/limit stages, post-settle CG pass and box/relax loop from rounds
+# 2-3 are kept as inexpensive extra protection.
+# =====================================================================
+
+units           metal
+atom_style      full      # supports charge + bonds
+boundary        p p p
+#processors      2 2 2
+
+# read data (dislocation dipole already built into CONFIG.E)
+read_data       CONFIG.E
+
+# allow shear relaxation (dislocations induce shear strain -> triclinic box)
+change_box      all triclinic
+
+# ---------- force fields ----------
+include         Param_KNO
+
+# ---------- safety walls (Type B design, RESIZED for Type E -- see Round 4 in the header) ----------
+# Bare ion cores (types 1-3) carry zero base short-range interaction in
+# this shell model -- only shells (4-6) have real Buckingham repulsion --
+# so any core pair with opposite-sign charges (e.g. Nb_core-O_core) has
+# NO natural floor against Coulomb collapse in a not-yet-relaxed geometry.
+# O_shell-O_shell (6-6) is the only pair with a nonzero Buckingham C term
+# (200.0), so it is also exposed to the "Buckingham catastrophe" (-C/r^6
+# outrunning the exponential repulsion at small r). Nb_shell-O_shell (5-6)
+# is the pair confirmed by Type B tracing to collapse when the local
+# Madelung field is disrupted.
+# Each wall is WCA (r_c = 2^(1/6)*sigma: zero force at r_c, purely repulsive,
+# "pair_modify shift yes" makes the energy continuous). The three walls that
+# matter for Type E are the ones below with r_c = 1.5-1.75 A -- they must
+# start acting BEFORE the collapse region, i.e. at larger r than the
+# Type B values (r_c ~ 0.67-0.95 A) which sat inside it, and they must be
+# SOFT (small epsilon) so their curvature stays below the integrator limit
+# of the light O shell at dt=0.5 fs (~2.4e3 eV/A^2; the old eps=50 walls
+# gave ~1e5). All r_c are still far below the equilibrium spacings
+# (Nb-O 1.977, O-O 2.796 A), so the relaxed crystal never feels them.
+# The 3 pairs that legitimately sit at r=0 (bonded core-shell of the SAME
+# species: 1-4, 2-5, 3-6) use 'soft': its force ~ sin(pi*r/rc) is zero at
+# r=0, so it cannot fight the class2 bond spring.
+special_bonds   lj 0.0 1.0 1.0 coul 0.0 1.0 1.0
+pair_style      hybrid/overlay buck/coul/long/cs 10 10 soft 3.5 lj/cut 3.5
+pair_coeff      *  *  buck/coul/long/cs 0.0        1.0    0.0    # Set No Interaction
+pair_coeff      4  6  buck/coul/long/cs 124872.44  0.1950 0.0    # K_shell  - O_shell
+pair_coeff      5  6  buck/coul/long/cs 1036.63    0.3900 0.0    # Nb_shell - O_shell
+pair_coeff      6  6  buck/coul/long/cs 3600.26    0.2834 200.0  # O_shell  - O_shell
+pair_coeff      6  6  lj/cut 2.0  1.514 1.70    # O_shell-O_shell: Buckingham-catastrophe guard (wall edge 1.70 A)
+pair_coeff      1  2  lj/cut 50.0 1.0  1.1225  # K_core-Nb_core         (opposite sign, no natural floor)
+pair_coeff      1  4  soft   50.0 0.85          # K_core-K_shell(4)      [bonded pair: r=0 normal]
+pair_coeff      1  6  lj/cut 50.0 0.85 0.9541  # K_core-O_shell         (opposite sign, no natural floor)
+pair_coeff      2  3  lj/cut 3.0  1.336 1.50    # Nb_core-O_core         (opposite sign, no natural floor)
+pair_coeff      2  5  soft   50.0 1.0           # Nb_core-Nb_shell(5)    [bonded pair: r=0 normal]
+pair_coeff      3  4  lj/cut 50.0 0.85 0.9541  # O_core-K_shell(4)      (opposite sign, no natural floor)
+pair_coeff      3  6  soft   50.0 0.85          # O_core-O_shell(6)      [bonded pair: r=0 normal]
+pair_coeff      4  5  lj/cut 50.0 1.0  1.1225  # K_shell(4)-Nb_shell(5) (opposite sign, no natural floor)
+pair_coeff      5  6  lj/cut 15.0 1.559 1.75    # Nb_shell-O_shell: CONFIRMED collapse pathway (wall edge 1.75 A)
+pair_modify     pair lj/cut shift yes
+kspace_style    pppm 1.0e-5
+bond_style      class2
+
+#               ID  R0      K2       K3      K4        # Core-Shell Interactions
+bond_coeff      1   0.0000  112.5    0.0000  0.0000    # K
+bond_coeff      2   0.0000  125.335  0.0000  16.6667   # Nb
+bond_coeff      3   0.0000  37.5     0.0000  62.5      # O
+
+# ---------- settings ----------
+neighbor        2.0 bin
+neigh_modify    every 1 delay 0 check yes one 6000 page 300000
+
+comm_modify     vel yes
+
+# ---------- variable ----------
+variable        Tmeas equal 30            # 20-50 K measurement window (Klomp)
+variable        Nsettle equal 2e+4        # settle shells onto cores  (10 ps)
+variable        Nequil  equal 2e+5        # NPT equilibration        (100 ps)
+variable        Nmeas   equal 1e+5        # PE production window       (50 ps)
+variable        del_t equal 0.0005        # ps (small step for light shells)
+
+variable        dNout equal 200
+variable        dNcfg equal 100
+variable        Tdamp equal 0.1           # ps (absolute, not del_t multiple)
+variable        Pdamp equal 50.0          # ps (absolute) -- see NPT section below; original 1.0 crashed immediately
+timestep        ${del_t}
+
+# ---------- grouping ----------
+group           cores  type 1 2 3
+group           shells type 4 5 6
+
+# ---------- thermo ----------
+thermo          ${dNout}
+thermo_style    custom step time etotal ke pe ebond ecoul temp press vol
+thermo_modify   lost warn
+
+# ---------- compute ----------
+compute         Tcs all temp/cs cores shells
+thermo_modify   temp Tcs
+compute         Pcs all pressure thermo_temp
+thermo_modify   temp Tcs press Pcs
+
+# =====================================================================
+#  0. STATIC RELAXATION (new): defect tether + charge ramp + CG-restart
+#     minimization on the as-built structure, BEFORE any dynamics, so
+#     the settle/NPT stages below start from an already-relaxed
+#     configuration instead of the raw synthetic geometry that crashed
+#     at step 88. Protocol ported verbatim from the Type B fix.
+# =====================================================================
+include         defect_group_E.txt
+fix             tether defects spring/self 15.0
+
+variable        qK    equal  1.2394
+variable        qNb   equal -2.9878
+variable        qO    equal  1.1236
+variable        qKs   equal -0.4189
+variable        qNbs  equal  7.8265
+variable        qOs   equal -3.0100
+
+min_style       cg
+min_modify      line backtrack dmax 0.01
+
+# -- charge ramp stage 1: 10% --
+set             type 1 charge $(0.1*v_qK)
+set             type 2 charge $(0.1*v_qNb)
+set             type 3 charge $(0.1*v_qO)
+set             type 4 charge $(0.1*v_qKs)
+set             type 5 charge $(0.1*v_qNbs)
+set             type 6 charge $(0.1*v_qOs)
+minimize        0.0 1.0e-4 1000 10000
+print           "Charge ramp stage 1 (10%) done"
+
+# -- charge ramp stage 2: 30% --
+set             type 1 charge $(0.3*v_qK)
+set             type 2 charge $(0.3*v_qNb)
+set             type 3 charge $(0.3*v_qO)
+set             type 4 charge $(0.3*v_qKs)
+set             type 5 charge $(0.3*v_qNbs)
+set             type 6 charge $(0.3*v_qOs)
+minimize        0.0 1.0e-4 1000 10000
+print           "Charge ramp stage 2 (30%) done"
+
+# -- charge ramp stage 3: 60% --
+set             type 1 charge $(0.6*v_qK)
+set             type 2 charge $(0.6*v_qNb)
+set             type 3 charge $(0.6*v_qO)
+set             type 4 charge $(0.6*v_qKs)
+set             type 5 charge $(0.6*v_qNbs)
+set             type 6 charge $(0.6*v_qOs)
+minimize        0.0 1.0e-4 1000 10000
+print           "Charge ramp stage 3 (60%) done"
+
+# -- charge ramp stage 4: 100% (exact original charges restored) --
+set             type 1 charge ${qK}
+set             type 2 charge ${qNb}
+set             type 3 charge ${qO}
+set             type 4 charge ${qKs}
+set             type 5 charge ${qNbs}
+set             type 6 charge ${qOs}
+minimize        0.0 1.0e-4 2000 20000
+print           "Charge ramp stage 4 (100%, original charges restored) done"
+
+unfix           tether
+
+variable        fmagsq atom fx*fx+fy*fy+fz*fz
+compute         fmaxat_loop all reduce max v_fmagsq
+variable        fmax_loop equal sqrt(c_fmaxat_loop)
+
+variable        irestart loop 15
+label           cg_restart_loop
+min_style       cg
+min_modify      line backtrack dmax 0.01
+minimize        0.0 1.0e-4 500 5000
+print           "CG restart ${irestart}: max |force| = ${fmax_loop} eV/A"
+if "${fmax_loop} < 5.0" then "jump SELF cg_done"
+next            irestart
+jump            SELF cg_restart_loop
+label           cg_done
+print           "Static relaxation finished, final max |force| = ${fmax_loop} eV/A"
+# snapshot of the statically relaxed structure, so collapsed pairs can be scanned offline
+# (check_pairs.py CONFIG.E_static) if a later stage fails
+write_data      CONFIG.E_static
+
+reset_timestep  0
+
+# ---------- 1. settle shells onto cores (replaces CG minimize) ----------
+# Uses nve/limit (displacement-capped integration) for the FULL settle
+# duration instead of free 'nve'. Validated directly on a local test
+# system: even after the static relaxation above converged to a low
+# residual force (fmax=2.35 eV/A, well under the 5.0 eV/A CG-loop exit
+# threshold), switching straight to free NVE still broke a core-shell
+# bond within 3 steps -- on an O_core/O_shell pair that was NOT among
+# the identified defect sites, so the fix-tether/defect_group approach
+# alone cannot catch it. A brief nve/limit warmup (200 steps) survived
+# cleanly, but the instant displacement was uncapped again the same bond
+# broke 2 steps later -- i.e. the residual post-minimization force is a
+# sustained local force, not a one-off transient a brief warmup outgrows.
+# nve/limit kept on for the whole window fixed it (full 500-step local
+# test completed with zero errors). xmax=0.02 A/step is far below any
+# bond length here, so it cannot itself introduce unphysical distortion --
+# it only prevents a single pathological step from breaking communication.
+velocity        all create 5.0 1 mom yes rot yes dist gaussian
+fix             set all nve/limit 0.02
+fix             vs  all temp/rescale 1 5.0 5.0 1.0 1.0
+fix_modify      vs temp Tcs
+run             ${Nsettle}
+unfix           vs
+unfix           set
+
+# ---------- 1.5 RE-MINIMIZE after settle (new) ----------
+# nve/limit caps per-step displacement, not force -- so a persistently
+# large local force doesn't break a bond outright, but can still keep
+# nudging the same atom the same direction every step across the whole
+# ${Nsettle}-step window, drifting it toward a worse local environment.
+# Confirmed directly on the full 782,810-atom production run: box/relax's
+# own minimize, called right after this settle stage, started from a max
+# atomic force of 2904 eV/A -- a ~100x jump from the 28.94 eV/A the
+# static CG-restart loop above had left off at, right before settle ran.
+# That large residual is exactly what the NPT startup below could not
+# survive on that run (dozens of bonds broke simultaneously, scattered
+# across many unrelated regions of the box, 2 steps into NPT -- a
+# systemic shock, not one isolated bad atom). Fix: re-run the same
+# CG-restart loop used for the static relaxation above, right after
+# settle and before box/relax, to re-catch and reduce whatever settle's
+# dynamics disturbed, using the same fmax_loop compute already defined.
+variable        irestart2 loop 15
+label           cg_restart_loop2
+min_style       cg
+min_modify      line backtrack dmax 0.01
+minimize        0.0 1.0e-4 500 5000
+print           "Post-settle CG restart ${irestart2}: max |force| = ${fmax_loop} eV/A"
+if "${fmax_loop} < 5.0" then "jump SELF cg_done2"
+next            irestart2
+jump            SELF cg_restart_loop2
+label           cg_done2
+print           "Post-settle re-minimization finished, final max |force| = ${fmax_loop} eV/A"
+
+# ---------- 2. low-T NPT at zero pressure (relax box + equilibrate) ----------
+# Parrinello-Rahman barostat stability requirements (already an
+# established lab learning -- Pdamp set as an absolute value, not a
+# multiple of the timestep -- and reconfirmed directly here): the
+# ORIGINAL Pdamp=1.0/drag=1.0 combination, with no box/relax pre-step,
+# crashed immediately at step 0 of this stage with "Fix npt has tilted
+# box too far in one step" on a local test system -- expected, since a
+# dislocation-strained cell carries a genuine residual shear stress
+# (confirmed directly: Pxy/Pxz/Pyz of order several hundred bar even
+# after box/relax) that a fast/lightly-damped barostat cannot absorb in
+# a single step. Fix: (a) pre-relax the box stress with box/relax before
+# ever starting NPT -- restart-looped exactly like the static CG
+# minimization above, since a single box/relax call hit the same
+# well-documented "linesearch alpha is zero" CG stall (confirmed
+# locally) after cutting residual pressure by ~700x in one pass, i.e.
+# still making excellent progress, just needing a fresh search direction;
+# (b) Pdamp raised well above the original 1.0 ps and drag increased to
+# 2.0, both far gentler barostat responses. NOTE: on the most compressed
+# local test cell (3 unit cells thick) even Pdamp=10-50 still tripped the
+# tilt-safety check post box/relax at that extreme aspect ratio. If
+# "tilted box too far" recurs on the full 7-unit-cell-thick production
+# cell despite this, the next lever is to raise Pdamp further still, or
+# lengthen/tighten the box/relax loop below (the real cell is much less
+# strain-concentrated than the local test cells, so this is offered as a
+# starting point, not a guarantee).
+reset_timestep  0
+velocity        all create ${Tmeas} 12345 mom yes rot yes dist gaussian
+
+variable        pressabs equal abs(press)
+fix             boxrelax all box/relax tri 0.0 vmax 0.001
+variable        ibrelax loop 8
+label           boxrelax_loop
+min_style       cg
+min_modify      line backtrack dmax 0.01
+minimize        0.0 1.0e-4 300 3000
+print           "box/relax restart ${ibrelax}: |press| = ${pressabs} bar"
+if "${pressabs} < 200.0" then "jump SELF boxrelax_done"
+next            ibrelax
+jump            SELF boxrelax_loop
+label           boxrelax_done
+unfix           boxrelax
+print           "Box pre-relaxation finished, final |press| = ${pressabs} bar"
+
+# NPT startup warmup with nve/limit (new): mirrors the settle-stage fix
+# above, applied here because the vulnerability it fixes is not specific
+# to the settle stage -- it is inherent to 'velocity create' followed
+# immediately by unconstrained dynamics, wherever that occurs. Here
+# 'velocity create ${Tmeas}' targets 30 K, 6x hotter than settle's 5 K,
+# right into 'fix npt' with no cap -- confirmed directly on the full
+# production run to break dozens of bonds simultaneously, scattered
+# across many unrelated regions of the box, just 2 steps after NPT
+# started. The post-settle re-minimization above should already remove
+# most of the risk, but this warmup is kept as a second, independent
+# layer of protection for the higher-temperature kick specifically.
+variable        Nwarm2 equal 2000
+fix             npwarm all nve/limit 0.02
+fix             vswarm all temp/rescale 1 ${Tmeas} ${Tmeas} 1.0 1.0
+fix_modify      vswarm temp Tcs
+run             ${Nwarm2}
+unfix           vswarm
+unfix           npwarm
+
+fix             1 all npt temp ${Tmeas} ${Tmeas} ${Tdamp} tri 0 0 ${Pdamp} drag 2.0 nreset 1000 flip no
+fix_modify      1 temp Tcs press Pcs
+
+# ---------- remove drift ----------
+fix             3 all momentum 100 linear 1 1 1
+
+# ---------- polarization (Pl) : total dipole / volume ----------
+# core-shell model: shell displaced from core gives the electronic dipole.
+# The cell is charge-neutral (Q=0), so the dipole is origin-independent.
+#   c_pol[1..3] = Px,Py,Pz [e*Ang];  c_pol[4] = |P|
+#   Pl [e/Ang^2] = dipole/volume ;  x16.02 -> C/m^2
+compute         pol all dipole
+variable        Plx equal c_pol[1]/vol
+variable        Ply equal c_pol[2]/vol
+variable        Plz equal c_pol[3]/vol
+variable        Plmag equal sqrt(v_Plx*v_Plx+v_Ply*v_Ply+v_Plz*v_Plz)
+variable        Plx_SI equal v_Plx*16.02       # C/m^2
+variable        Ply_SI equal v_Ply*16.02
+variable        Plz_SI equal v_Plz*16.02
+variable        Plmag_SI equal v_Plmag*16.02
+
+# ---------- dumping ---------
+dump		4 cores cfg ${dNcfg} *.cfge mass type xs ys zs id mol q
+dump_modify	4 element K Nb O H H H
+
+fix engout all print  ${dNout} "$(step) $(time) $(temp) $(ke) $(pe) $(ebond)" screen no file energy.d
+fix strout all print  ${dNout} "$(step) $(time) $(temp) $(pxx) $(pyy) $(pzz) $(press)" screen no file stress.d
+fix cllout all print  ${dNout} "$(step) $(time) $(temp) $(vol) $(lx) $(ly) $(lz) $(xy) $(xz) $(yz)" screen no file cell.d
+fix polout all print  ${dNout} "$(step) $(time) $(temp) $(v_Plx_SI) $(v_Ply_SI) $(v_Plz_SI) $(v_Plmag_SI)" screen no file pol.d
+
+run             ${Nequil}
+
+# ---------- 3. measure averaged potential energy ----------
+variable        natoms equal count(all)
+variable        peinst equal pe
+fix             avpe all ave/time 10 10000 100000 v_peinst
+# also average the polarization magnitude over the production window
+fix             avpl all ave/time 10 10000 100000 v_Plmag_SI
+run             ${Nmeas}
+
+variable        pe_total    equal f_avpe
+variable        pe_per_atom equal f_avpe/${natoms}
+variable        Pl_avg      equal f_avpl
+print           "RESULT typeE N=${natoms} pe_total=${pe_total} pe_per_atom=${pe_per_atom} Pl_Cm2=${Pl_avg}" &
+                append pe_typeE.dat screen yes
+
+write_data      CONFIG.E_relaxed
