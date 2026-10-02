@@ -1,0 +1,10 @@
+{
+  "type": "B",
+  "defect_file": "defect_group.txt",
+  "selected_atoms": 1800,
+  "selected_cores": 900,
+  "data_sha256": "590e103186423056f185b57540ef2eba91c869e3a725fc6dae3ba109db4b0d19",
+  "atoms_bonds_sha256": "da5b24e638b580168d776619813246ab238d6ef6ce852eaa4df2885246195402",
+  "defect_sha256": "8d4e7bb11ed0eba842a1007a04aa2d68ee810bb5ae4655f0bfde0869f86290b1",
+  "potential_sha256": "27b1801f19b293f60fb21d616d784d5727082b8fe34b2c2f598fac820fc2dcac"
+}
