@@ -1,0 +1,10 @@
+{
+  "type": "D",
+  "defect_file": "defect_group_D.txt",
+  "selected_atoms": 5738,
+  "selected_cores": 2869,
+  "data_sha256": "97e79d8b16e03ab3bb80a4fd22990080e2f995e66645c7b05abc4794e016c209",
+  "atoms_bonds_sha256": "57b386a2deba688e21cf35e65c0095b00dc352bb69b887c1e6af6455e1ec7daa",
+  "defect_sha256": "987266446c521785e398b44df4af510120ccd10a1279c5062677b5dbe19e2a71",
+  "potential_sha256": "27b1801f19b293f60fb21d616d784d5727082b8fe34b2c2f598fac820fc2dcac"
+}
