@@ -1,0 +1,46 @@
+{
+  "original_particles": 780120,
+  "corrected_particles": 778140,
+  "physical_ions": 389070,
+  "bonds": 389070,
+  "type_counts": {
+    "1": 77814,
+    "2": 77814,
+    "3": 233442,
+    "4": 77814,
+    "5": 77814,
+    "6": 233442
+  },
+  "box_lengths_m": [
+    6.39244908e-08,
+    3.69068262e-08,
+    2.0546206000000003e-09
+  ],
+  "frame_rows": [
+    [
+      1.0,
+      -1.0,
+      -2.0
+    ],
+    [
+      1.0,
+      1.0,
+      0.0
+    ],
+    [
+      1.0,
+      -1.0,
+      1.0
+    ]
+  ],
+  "frame_determinant": 1.0,
+  "burgers_cell_m": [
+    0.0,
+    5.591941846979454e-10,
+    0.0
+  ],
+  "net_charge_C": 0.0,
+  "max_core_shell_separation_m": 0.0,
+  "min_nonbonded_ion_distance_m": 1.9769960901579602e-10,
+  "sha256": "97e79d8b16e03ab3bb80a4fd22990080e2f995e66645c7b05abc4794e016c209"
+}
