@@ -1,0 +1,21 @@
+# User-editable controls; -var NAME VALUE overrides an index variable.
+# metal command units: ps, Angstrom, eV, bar; output *.d files use SI.
+variable Tmeas index 30
+variable Nsettle index 20000
+variable Nequil index 200000
+variable Nmeas index 100000
+variable del_t index 0.0004  # 4e-16 s; Khadka & Keblinski (2022), p.12931
+variable dNout index 200
+variable dNcfg index 1000
+variable Tdamp index 0.1
+variable Pdamp index 1.0
+variable Navg_every index 10
+variable Navg_repeat index 10000
+variable Navg_freq index 100000
+# Static controls are preparation choices, not published KNbO3 dislocation values.
+variable Ftol_stage index 0.01   # 1.602176634e-11 N (max atom force norm)
+variable Ftol_final index 0.001  # 1.602176634e-12 N
+variable Miniter_stage index 10000
+variable Mineval_stage index 100000
+variable Miniter_final index 50000
+variable Mineval_final index 500000
