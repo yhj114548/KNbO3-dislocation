@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "Please cite this repository when using its code or model setup. Cite the reference article separately for the dislocation framework."
+type: software
+title: "KNbO3 Dislocation Simulations with a Core-Shell Model"
+authors:
+  - name: "yhj114548"
+repository-code: "https://github.com/yhj114548/KNbO3-dislocation"
+url: "https://github.com/yhj114548/KNbO3-dislocation"
+abstract: "Research inputs and workflows adapting Type A-E dislocation geometries to KNbO3 with a core-shell model in LAMMPS."
+keywords:
+  - KNbO3
+  - LAMMPS
+  - dislocations
+  - core-shell
+  - ferroelectrics
+references:
+  - type: article
+    title: "The nature and motion of deformation-induced dislocations in SrTiO3: Insights from atomistic simulations"
+    authors:
+      - family-names: Klomp
+        given-names: Arne J.
+      - family-names: Porz
+        given-names: Lukas
+      - family-names: Albe
+        given-names: Karsten
+    journal: "Acta Materialia"
+    volume: "242"
+    year: 2023
+    doi: "10.1016/j.actamat.2022.118404"
