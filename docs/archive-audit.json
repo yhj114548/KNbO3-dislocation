@@ -1,0 +1,407 @@
+{
+  "method": "Read ZIP entries; copy small UTF-8 source files without changing their bytes.",
+  "archives": {
+    "A.zip": {
+      "sha256": "d52ea374d7cbecf06e3b2a1a46da9af28bc6147aa7b309fac061f675730c20c1",
+      "copied": [
+        {
+          "path": "models/A/input_manifest.json",
+          "archive_path": "A/input_manifest.json",
+          "sha256": "9462f4b50d5542ead1b81fc3f608b5be014610bd96e3f83be9d6752913fb0a95"
+        },
+        {
+          "path": "models/A/IN_A",
+          "archive_path": "A/IN_A",
+          "sha256": "7afee1e0bfda7f82fbc69fc504549910a1bd58cefb4f2b3f426f6deb832ff9ff"
+        },
+        {
+          "path": "models/A/builder_common.py",
+          "archive_path": "A/builder_common.py",
+          "sha256": "4ba4916ada6ea11e8463b306c04d88547cb4147341b94a0bbff6feffe63e91d8"
+        },
+        {
+          "path": "models/A/verify_inputs.py",
+          "archive_path": "A/verify_inputs.py",
+          "sha256": "6b7133ddff3de609792379d5d8173c852b49b830b9618a1fd91040777014b8c1"
+        },
+        {
+          "path": "models/A/CONFIG.IN",
+          "archive_path": "A/CONFIG.IN",
+          "sha256": "92164574db103aa7479d5f76a2f03fc670d91cb722907d9701473e7fad503ae8"
+        },
+        {
+          "path": "models/A/make_typeA.py",
+          "archive_path": "A/make_typeA.py",
+          "sha256": "cd688b05e762674468d56f90c9ebe7abe5a96fe5d14c93ff203b4537321532ae"
+        },
+        {
+          "path": "models/A/relaxation_A.status",
+          "archive_path": "A/relaxation_A.status",
+          "sha256": "786ed6c385a8aec8cd832cd596db661c03c7385b16680199040bf84d902a0c56"
+        },
+        {
+          "path": "models/A/COMMON.in",
+          "archive_path": "A/COMMON.in",
+          "sha256": "55ef6ce2cf4e8d9cd0537f3f5a6413889338fda37eea1baaf64c643d12f5cead"
+        },
+        {
+          "path": "models/A/Param_KNO",
+          "archive_path": "A/Param_KNO",
+          "sha256": "27b1801f19b293f60fb21d616d784d5727082b8fe34b2c2f598fac820fc2dcac"
+        },
+        {
+          "path": "models/A/SETTINGS.in",
+          "archive_path": "A/SETTINGS.in",
+          "sha256": "aac19585c842acc05026a85afdcc450c40867cde4e85ca3f54a513932fc50cd2"
+        },
+        {
+          "path": "models/A/RELAX.in",
+          "archive_path": "A/RELAX.in",
+          "sha256": "1d56b4020ab875b38517aee12c5283d10a0296a887648955c28b9f11e9ee63ec"
+        },
+        {
+          "path": "models/A/code_manifest.json",
+          "archive_path": "A/code_manifest.json",
+          "sha256": "b83bd9f92b64ca2eb9ea4c854e29a1dbbe75695944d8ab2eaa0a1cbc97b2f08b"
+        }
+      ],
+      "invalid_text": [],
+      "missing_generated_data": [
+        "CONFIG.A"
+      ]
+    },
+    "B.zip": {
+      "sha256": "5151069ac5a1cc071d25414dddbf00395f24378e37939ea685b0bbeb029c2387",
+      "copied": [
+        {
+          "path": "models/B/relaxation_B.status",
+          "archive_path": "B/relaxation_B.status",
+          "sha256": "fd6c9e6cebfb40e0b14511efff330e42c91e3710b0a0d1c3d20f76fdd2e9fc52"
+        },
+        {
+          "path": "models/B/CONFIG.IN",
+          "archive_path": "B/CONFIG.IN",
+          "sha256": "92164574db103aa7479d5f76a2f03fc670d91cb722907d9701473e7fad503ae8"
+        },
+        {
+          "path": "models/B/IN_B",
+          "archive_path": "B/IN_B",
+          "sha256": "f636f761eb5fc142be7f1a766249d26036822309160d682357c2f90fdc94bb1f"
+        },
+        {
+          "path": "models/B/Param_KNO",
+          "archive_path": "B/Param_KNO",
+          "sha256": "27b1801f19b293f60fb21d616d784d5727082b8fe34b2c2f598fac820fc2dcac"
+        },
+        {
+          "path": "models/B/FILE_MANIFEST.json",
+          "archive_path": "B/FILE_MANIFEST.json",
+          "sha256": "4ab15db8a31649b8fa17ae59ab946323f7f1489ae5d97ed6760b74a4978bc085"
+        },
+        {
+          "path": "models/B/input_fingerprints.json",
+          "archive_path": "B/input_fingerprints.json",
+          "sha256": "ce53a2bc92b349cbb0d1e466352199758cd2b3a019db6a1d5ed1d141e8999a84"
+        }
+      ],
+      "invalid_text": [
+        {
+          "path": "B/B_GEOMETRY.md",
+          "size": 3191,
+          "all_bytes_0xff": true
+        },
+        {
+          "path": "B/RELAX_B.in",
+          "size": 5154,
+          "all_bytes_0xff": true
+        },
+        {
+          "path": "B/defect_group.txt",
+          "size": 13328,
+          "all_bytes_0xff": true
+        },
+        {
+          "path": "B/ENGINE_CHECKS.json",
+          "size": 3215,
+          "all_bytes_0xff": true
+        },
+        {
+          "path": "B/prepare_run.py",
+          "size": 1022,
+          "all_bytes_0xff": true
+        },
+        {
+          "path": "B/CHANGELOG.md",
+          "size": 9576,
+          "all_bytes_0xff": true
+        },
+        {
+          "path": "B/B_GEOMETRY.json",
+          "size": 790,
+          "all_bytes_0xff": true
+        },
+        {
+          "path": "B/builder_common.py",
+          "size": 11677,
+          "all_bytes_0xff": true
+        },
+        {
+          "path": "B/GEOMETRY_CHECKS.json",
+          "size": 1420,
+          "all_bytes_0xff": true
+        },
+        {
+          "path": "B/make_typeB.py",
+          "size": 1048,
+          "all_bytes_0xff": true
+        },
+        {
+          "path": "B/verify_inputs.py",
+          "size": 8493,
+          "all_bytes_0xff": true
+        },
+        {
+          "path": "B/B_NEIGHBORS.json",
+          "size": 387,
+          "all_bytes_0xff": true
+        },
+        {
+          "path": "B/VALIDATION.json",
+          "size": 1769,
+          "all_bytes_0xff": true
+        }
+      ],
+      "missing_generated_data": []
+    },
+    "C.zip": {
+      "sha256": "fc15f2a6094fdc7248afab4200bdbce431fdb20146050f13d0eaaa99fef2e9cc",
+      "copied": [
+        {
+          "path": "models/C/input_manifest.json",
+          "archive_path": "C/input_manifest.json",
+          "sha256": "70939631ee02e222f4c1a2b5a686e848771fcba630765d2fb353964f4f0094fd"
+        },
+        {
+          "path": "models/C/builder_common.py",
+          "archive_path": "C/builder_common.py",
+          "sha256": "577453cbac30226405144f938f1415353fc7d7c804744bc4801024b35d77177d"
+        },
+        {
+          "path": "models/C/make_typeC.py",
+          "archive_path": "C/make_typeC.py",
+          "sha256": "45803e71f2ece4298d3bbeecd4a91c2319988ce05d62bf4603bcedb7dee2c280"
+        },
+        {
+          "path": "models/C/verify_inputs.py",
+          "archive_path": "C/verify_inputs.py",
+          "sha256": "6b7133ddff3de609792379d5d8173c852b49b830b9618a1fd91040777014b8c1"
+        },
+        {
+          "path": "models/C/CONFIG.IN",
+          "archive_path": "C/CONFIG.IN",
+          "sha256": "92164574db103aa7479d5f76a2f03fc670d91cb722907d9701473e7fad503ae8"
+        },
+        {
+          "path": "models/C/COMMON.in",
+          "archive_path": "C/COMMON.in",
+          "sha256": "55ef6ce2cf4e8d9cd0537f3f5a6413889338fda37eea1baaf64c643d12f5cead"
+        },
+        {
+          "path": "models/C/Param_KNO",
+          "archive_path": "C/Param_KNO",
+          "sha256": "27b1801f19b293f60fb21d616d784d5727082b8fe34b2c2f598fac820fc2dcac"
+        },
+        {
+          "path": "models/C/IN_C",
+          "archive_path": "C/IN_C",
+          "sha256": "83bf5c67e0a81b109179b12624b6eede558eb5f3a5408a4e4002188c12ed4623"
+        },
+        {
+          "path": "models/C/SETTINGS.in",
+          "archive_path": "C/SETTINGS.in",
+          "sha256": "aac19585c842acc05026a85afdcc450c40867cde4e85ca3f54a513932fc50cd2"
+        },
+        {
+          "path": "models/C/relaxation_C.status",
+          "archive_path": "C/relaxation_C.status",
+          "sha256": "e0f83821ce81b9a25710fa9b0ca71677f32f0b45b9518a38c2dfb5f5aeca889e"
+        },
+        {
+          "path": "models/C/RELAX.in",
+          "archive_path": "C/RELAX.in",
+          "sha256": "1d56b4020ab875b38517aee12c5283d10a0296a887648955c28b9f11e9ee63ec"
+        },
+        {
+          "path": "models/C/code_manifest.json",
+          "archive_path": "C/code_manifest.json",
+          "sha256": "925118f73e55b8cb81cdfc001707b264edbe0d7f4a649d6c6f006af8b7385743"
+        }
+      ],
+      "invalid_text": [],
+      "missing_generated_data": []
+    },
+    "D.zip": {
+      "sha256": "0b9e12c4f666fed6c22dd8997e2344c8edae28a8a67274617852688991fc938d",
+      "copied": [
+        {
+          "path": "models/D/ENGINE_CHECKS.json",
+          "archive_path": "D/ENGINE_CHECKS.json",
+          "sha256": "25c3b7c86e6c474c1b7409f38c1650374f68a28b4bca50e8438cd06e9d01a13e"
+        },
+        {
+          "path": "models/D/prepare_run.py",
+          "archive_path": "D/prepare_run.py",
+          "sha256": "78ff984715bdcdc8a1210ab56f6ed8a5a67f635cc446bf3348667ea16bd5d799"
+        },
+        {
+          "path": "models/D/relaxation_D.status",
+          "archive_path": "D/relaxation_D.status",
+          "sha256": "310afec3f6c432f41c8d6a590e924d394b7a1a053af154441123f474c210f5f8"
+        },
+        {
+          "path": "models/D/CHANGELOG.md",
+          "archive_path": "D/CHANGELOG.md",
+          "sha256": "99ade571171a2f5cb8e40be2ca02be2bcb5bc2257dfb9fb4cce7237f731b1dbb"
+        },
+        {
+          "path": "models/D/defect_group_D.txt",
+          "archive_path": "D/defect_group_D.txt",
+          "sha256": "987266446c521785e398b44df4af510120ccd10a1279c5062677b5dbe19e2a71"
+        },
+        {
+          "path": "models/D/builder_common.py",
+          "archive_path": "D/builder_common.py",
+          "sha256": "7ed32ec9fa421a91ddef90fa2d850ef0d850e783b63db2ef2755ac83f757ecf8"
+        },
+        {
+          "path": "models/D/GEOMETRY_CHECKS.json",
+          "archive_path": "D/GEOMETRY_CHECKS.json",
+          "sha256": "24dce292d5ae69702c1b31a6094f5be3c87188405096e6986b0a7b7775ee0db4"
+        },
+        {
+          "path": "models/D/check_coord.py",
+          "archive_path": "D/check_coord.py",
+          "sha256": "e8c365b2c1ac7d8980d3a032b8f7de0b28ecc2b7ae90dbc178406ae05b5e37a6"
+        },
+        {
+          "path": "models/D/verify_inputs.py",
+          "archive_path": "D/verify_inputs.py",
+          "sha256": "d12a2475c8f8cc8c6f988ab15ab2d5602551d5c2d3576a715b740a5ba1a228e2"
+        },
+        {
+          "path": "models/D/CONFIG.IN",
+          "archive_path": "D/CONFIG.IN",
+          "sha256": "92164574db103aa7479d5f76a2f03fc670d91cb722907d9701473e7fad503ae8"
+        },
+        {
+          "path": "models/D/make_typeD.py",
+          "archive_path": "D/make_typeD.py",
+          "sha256": "0d45acba78b4f474db06a56622f2acb2c1714c4c0fa4012f5f65c28fa1422fa1"
+        },
+        {
+          "path": "models/D/VALIDATION.json",
+          "archive_path": "D/VALIDATION.json",
+          "sha256": "b061def87d11a88e123b22ae1429fcbdb99140f55fb5cc7c80cfb8eba0baccdd"
+        },
+        {
+          "path": "models/D/README.txt",
+          "archive_path": "D/README.txt",
+          "sha256": "89a23026bf10812ad48ae81a042899315c205285778fdec04deca7f2f90135e6"
+        },
+        {
+          "path": "models/D/Param_KNO",
+          "archive_path": "D/Param_KNO",
+          "sha256": "27b1801f19b293f60fb21d616d784d5727082b8fe34b2c2f598fac820fc2dcac"
+        },
+        {
+          "path": "models/D/RELAX_D.in",
+          "archive_path": "D/RELAX_D.in",
+          "sha256": "68d7e5bd111b5f8f2cff5938fc4ceaea4b18f21e272d7e00c3b6465b6d0b8e6a"
+        },
+        {
+          "path": "models/D/IN_D",
+          "archive_path": "D/IN_D",
+          "sha256": "87932b8b7bbbed9be58913ffbcc3b2cfe711977d9ca81dfca7c1c8b73b3680db"
+        },
+        {
+          "path": "models/D/FILE_MANIFEST.json",
+          "archive_path": "D/FILE_MANIFEST.json",
+          "sha256": "ce1f0031c31d6494112e635868a297b63de70e3a30a4ccec7cd5d526ca232732"
+        },
+        {
+          "path": "models/D/input_fingerprints.json",
+          "archive_path": "D/input_fingerprints.json",
+          "sha256": "1eeacf309e068c74a71924f70cbf02e52f52f74b2adef324166eab0d5cdb38b5"
+        }
+      ],
+      "invalid_text": [],
+      "missing_generated_data": [
+        "CONFIG.D"
+      ]
+    },
+    "E (copy).zip": {
+      "sha256": "959c1e9c30a3d74081ceee9fba970ae1dae91b6aef1cfc63f1db022c14265470",
+      "copied": [
+        {
+          "path": "models/E/defect_group_E.txt",
+          "archive_path": "E (copy)/defect_group_E.txt",
+          "sha256": "4299bf57e0c598e7438317e50902e96fb379da8a5b390b6e584f99ec6b16e474"
+        },
+        {
+          "path": "models/E/builder_common.py",
+          "archive_path": "E (copy)/builder_common.py",
+          "sha256": "aa75cef2229f8c1e9127daedff47ce7901d1616a78ca334ff9bb693a9aa46f93"
+        },
+        {
+          "path": "models/E/CONFIG.IN",
+          "archive_path": "E (copy)/CONFIG.IN",
+          "sha256": "92164574db103aa7479d5f76a2f03fc670d91cb722907d9701473e7fad503ae8"
+        },
+        {
+          "path": "models/E/make_typeE.py",
+          "archive_path": "E (copy)/make_typeE.py",
+          "sha256": "219c3e3ac959b05851d087e1f448ea463ee6b2fbc5cd372f5150f61904c38c59"
+        },
+        {
+          "path": "models/E/README.txt",
+          "archive_path": "E (copy)/README.txt",
+          "sha256": "75ae48496ed2944f1d3e76c1d00fdc047596fac1f946ffdb1fc1bae6cd0d6502"
+        },
+        {
+          "path": "models/E/IN_E",
+          "archive_path": "E (copy)/IN_E",
+          "sha256": "5477dd54fcc00f4d9e658243b8e1a046718932086d8ef668f359efc3671ef7d1"
+        },
+        {
+          "path": "models/E/Param_KNO",
+          "archive_path": "E (copy)/Param_KNO",
+          "sha256": "27b1801f19b293f60fb21d616d784d5727082b8fe34b2c2f598fac820fc2dcac"
+        }
+      ],
+      "invalid_text": [],
+      "missing_generated_data": []
+    },
+    "20260205-KNO_ts_0.001_tri (copy).zip": {
+      "sha256": "ef7e4aaab4439db5a2bd8ca9734a6bdb520a5131ecfbda7d7eb7704c5814aed9",
+      "copied": [
+        {
+          "path": "models/reference/IN",
+          "archive_path": "20260205-KNO_ts_0.001_tri (copy)/IN",
+          "sha256": "cc063331fbd72b757cde9ba42dde5c229976bb28beb74d00819f55d155048c41"
+        },
+        {
+          "path": "models/reference/CONFIG.IN",
+          "archive_path": "20260205-KNO_ts_0.001_tri (copy)/CONFIG.IN",
+          "sha256": "92164574db103aa7479d5f76a2f03fc670d91cb722907d9701473e7fad503ae8"
+        },
+        {
+          "path": "models/reference/Param_KNO",
+          "archive_path": "20260205-KNO_ts_0.001_tri (copy)/Param_KNO",
+          "sha256": "27b1801f19b293f60fb21d616d784d5727082b8fe34b2c2f598fac820fc2dcac"
+        }
+      ],
+      "invalid_text": [],
+      "missing_generated_data": []
+    }
+  }
+}
