@@ -1,0 +1,106 @@
+# Staged fixed-cell relaxation, followed by the existing low-T NPT in IN_D.
+# Klomp et al., Acta Mater.242 (2023) 118404, Sec.2.2 describes step-wise
+# constraint removal but gives no spring constants or minimizer tolerances.
+# The values below are explicit preparation choices, NOT quotations from it.
+# LAMMPS metal units in executable commands; SI equivalents in comments.
+# No charge scaling and no modification of Param_KNO.
+
+print           "STATIC_STARTED: full physical charges, fixed cell" append relaxation_D.status screen yes
+velocity        all set 0.0 0.0 0.0
+variable        Ftol_stage equal 1.0e-3   # 1.602176634e-12 N per atom
+variable        Ftol_final equal 1.0e-4   # 1.602176634e-13 N per atom
+variable        Fsq atom fx*fx+fy*fy+fz*fz
+compute         Fsqmax all reduce max v_Fsq
+variable        Fmax equal sqrt(c_Fsqmax)
+variable        Fmax_N equal v_Fmax*1.602176634e-9
+thermo_style    custom step pe ebond ecoul fmax fnorm v_Fmax_N
+thermo_modify   lost error
+min_style       cg
+min_modify      line quadratic dmax 0.01 norm max  # max displacement 1.0e-12 m
+
+# First equilibrate shells at fixed nuclear cores; frozen forces are zero,
+# so the force gate here applies to the free shell degrees of freedom only.
+fix             hold_cores cores setforce 0.0 0.0 0.0
+minimize        0.0 ${Ftol_stage} 5000 50000
+if "$(v_Fmax <= v_Ftol_stage)" then &
+    "print 'PASS shells_fixed_cores Fmax_N=${Fmax_N}' append relaxation_D.status" &
+else &
+    "print 'FAIL shells_fixed_cores Fmax_N=${Fmax_N}; MD NOT STARTED' append relaxation_D.status" &
+    "write_data CONFIG.D_relax_failed" &
+    "write_dump all custom relaxation_D_failed.dump id type mol q x y z fx fy fz" &
+    "quit 1"
+unfix           hold_cores
+
+# Use the regenerated selection for this CONFIG.D. Only the nuclear
+# cores are tethered; shell polarization remains free. verify_inputs.py
+# checks selection pairing and its exact CONFIG.D geometry fingerprint.
+include         defect_group_D.txt
+group           defect_cores intersect defects cores
+variable        Ktether equal 15.0
+fix             tether defect_cores spring/self v_Ktether
+fix_modify      tether energy yes
+# The same fix remains alive through all stages: its reference positions
+# are unchanged as K decreases. Box dimensions stay fixed in these stages.
+
+# Restraint stiffness 240.3264951 N/m.
+variable        Ktether equal 15.0
+minimize        0.0 ${Ftol_stage} 5000 50000
+if "$(v_Fmax <= v_Ftol_stage)" then &
+    "print 'PASS tether_K=15.0 Fmax_N=${Fmax_N}' append relaxation_D.status" &
+else &
+    "print 'FAIL tether_K=15.0 Fmax_N=${Fmax_N}; MD NOT STARTED' append relaxation_D.status" &
+    "write_data CONFIG.D_relax_failed" &
+    "write_dump all custom relaxation_D_failed.dump id type mol q x y z fx fy fz" &
+    "quit 1"
+
+# Restraint stiffness 80.1088317 N/m.
+variable        Ktether equal 5.0
+minimize        0.0 ${Ftol_stage} 5000 50000
+if "$(v_Fmax <= v_Ftol_stage)" then &
+    "print 'PASS tether_K=5.0 Fmax_N=${Fmax_N}' append relaxation_D.status" &
+else &
+    "print 'FAIL tether_K=5.0 Fmax_N=${Fmax_N}; MD NOT STARTED' append relaxation_D.status" &
+    "write_data CONFIG.D_relax_failed" &
+    "write_dump all custom relaxation_D_failed.dump id type mol q x y z fx fy fz" &
+    "quit 1"
+
+# Restraint stiffness 16.02176634 N/m.
+variable        Ktether equal 1.0
+minimize        0.0 ${Ftol_stage} 5000 50000
+if "$(v_Fmax <= v_Ftol_stage)" then &
+    "print 'PASS tether_K=1.0 Fmax_N=${Fmax_N}' append relaxation_D.status" &
+else &
+    "print 'FAIL tether_K=1.0 Fmax_N=${Fmax_N}; MD NOT STARTED' append relaxation_D.status" &
+    "write_data CONFIG.D_relax_failed" &
+    "write_dump all custom relaxation_D_failed.dump id type mol q x y z fx fy fz" &
+    "quit 1"
+
+# Restraint stiffness 1.602176634 N/m.
+variable        Ktether equal 0.1
+minimize        0.0 ${Ftol_stage} 5000 50000
+if "$(v_Fmax <= v_Ftol_stage)" then &
+    "print 'PASS tether_K=0.1 Fmax_N=${Fmax_N}' append relaxation_D.status" &
+else &
+    "print 'FAIL tether_K=0.1 Fmax_N=${Fmax_N}; MD NOT STARTED' append relaxation_D.status" &
+    "write_data CONFIG.D_relax_failed" &
+    "write_dump all custom relaxation_D_failed.dump id type mol q x y z fx fy fz" &
+    "quit 1"
+
+# Final force gate is on the unrestrained physical potential, at fixed cell.
+unfix           tether
+minimize        0.0 ${Ftol_final} 20000 200000
+if "$(v_Fmax <= v_Ftol_final)" then &
+    "print 'STATIC_PASS unrestrained Fmax_N=${Fmax_N}' append relaxation_D.status" &
+else &
+    "print 'FAIL unrestrained Fmax_N=${Fmax_N}; MD NOT STARTED' append relaxation_D.status" &
+    "write_data CONFIG.D_relax_failed" &
+    "write_dump all custom relaxation_D_failed.dump id type mol q x y z fx fy fz" &
+    "quit 1"
+write_data      CONFIG.D_static
+
+# Internal oscillator kinetic energy: total KE minus the pair COM KE.
+# Small round-off differences can give tiny negative values near zero.
+compute         KEparticles all ke
+variable        KEinternal_J equal (c_KEparticles-0.5*(c_Tcs[1]+c_Tcs[2]+c_Tcs[3]))*1.602176634e-19
+thermo_style    custom step time etotal ke pe ebond ecoul temp press vol v_KEinternal_J
+thermo_modify   temp Tcs press Pcs lost error
