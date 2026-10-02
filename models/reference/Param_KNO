@@ -1,0 +1,24 @@
+##/bin/sh
+
+special_bonds  lj 0.0 1.0 1.0 coul 0.0 1.0 1.0
+
+#### PAIR shell-shell interaction ##############################
+
+pair_style	buck/coul/long/cs 10 10
+
+#		ID1	ID2	A		rho	C
+pair_coeff	*	*	0.0		1.0	0.0	# Set No Interaction
+pair_coeff	4	6	124872.44	0.1950	0.0	#  K_shell - O_shell
+pair_coeff	5	6	1036.63		0.3900	0.0	# Nb_shell - O_shell
+pair_coeff	6	6	3600.26		0.2834	200.0	#  O_shell - O_shell
+
+kspace_style	pppm	1.0e-5
+
+#### BOND core-shell interaction ###############################
+
+bond_style	class2
+
+#		ID	R0	K2	K3	K4	# Core-Shell Interactions
+bond_coeff	1	0.0000	112.5	0.0000	0.0000	# K
+bond_coeff	2	0.0000	125.335	0.0000	16.6667	# Nb
+bond_coeff	3	0.0000	37.5	0.0000	62.5	# O
