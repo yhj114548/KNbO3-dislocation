@@ -1,0 +1,3 @@
+# KNbO3 Type A; crystallographic orientation preserved.
+variable TYPE string A
+include COMMON.in
