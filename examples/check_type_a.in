@@ -1,0 +1,20 @@
+# Initial-force/read-data check ONLY. No minimization or dynamics.
+units metal
+atom_style full
+boundary p p p
+read_data CONFIG.A nocoeff
+include Param_KNO
+# Use Ewald for this small check; production archives use PPPM.
+# This avoids an FFTW cleanup crash in the local 22 Jul 2025 build.
+kspace_style ewald 1.0e-5
+neighbor 2.0 bin
+neigh_modify every 1 delay 0 check yes
+comm_modify vel yes
+group cores type 1 2 3
+group shells type 4 5 6
+variable force_norm atom sqrt(fx*fx+fy*fy+fz*fz)
+compute maximum_force all reduce max v_force_norm
+thermo_style custom step atoms pe ebond ecoul c_maximum_force
+run 0
+write_dump cores custom initial-cores.dump id type q x y z
+print "INITIAL_FORCE_CHECK_ONLY: inspect forces and geometry before relaxation or MD."
