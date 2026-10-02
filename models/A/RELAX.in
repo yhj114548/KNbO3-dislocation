@@ -1,0 +1,144 @@
+# Joint core-shell FIRE relaxation at fixed box; no frozen-core CG stage.
+# Step-wise release follows the preparation principle of Klomp Sec.2.2.
+# FIRE: Bitzek et al., PRL 97 (2006) 170201. K values and gates are our
+# numerical choices. Temporary restraint energy is included then removed.
+print "STARTED static preparation" file relaxation_${TYPE}.status
+velocity all set 0.0 0.0 0.0
+variable Fsq atom fx*fx+fy*fy+fz*fz
+compute Fsqmax all reduce max v_Fsq
+variable Fmax equal sqrt(c_Fsqmax)
+variable Fmax_N equal v_Fmax*1.602176634e-9
+compute Bdist all bond/local dist
+compute Bmax all reduce max c_Bdist inputs local
+variable Bmax_m equal c_Bmax*1.0e-10
+# Only shell neighbours, so the zero-length bonded core-shell pair is excluded.
+compute close shells coord/atom cutoff 0.8 4*6
+compute closemax shells reduce max c_close
+variable bad equal (v_Fmax>1.0e4)||(c_Bmax>1.0)
+# Stop before wasting a long job on force/bond runaway; save below on failure.
+fix guard all halt 1 v_bad > 0 error continue message yes
+thermo_style custom step pe ebond ecoul fmax fnorm v_Fmax_N v_Bmax_m
+thermo_modify lost error flush yes
+min_style fire
+min_modify dmax 0.01 tmax 1.0 norm max
+# Small adaptive-step ceiling while the largest temporary stiffness is present.
+timestep 0.0001
+variable Ktether equal 1000.0
+fix tether all spring/self v_Ktether
+fix_modify tether energy yes
+
+# Stage 0: K=1000 eV/Angstrom^2 = 16021.76634 N/m.
+variable Ktether equal 1000
+timestep 0.0001
+thermo ${dNout}
+thermo_modify flush yes
+minimize 0.0 ${Ftol_stage} ${Miniter_stage} ${Mineval_stage}
+# run 0 refreshes force and geometry computes without moving atoms.
+run 0
+if "$(v_Fmax <= v_Ftol_stage && c_Bmax < 1.0 && c_closemax == 0)" then &
+ "print 'PASS stage_0 Fmax_N=${Fmax_N} Bmax_m=${Bmax_m}' append relaxation_${TYPE}.status" &
+else &
+ "print 'FAIL stage_0; MD NOT STARTED' append relaxation_${TYPE}.status" &
+ "write_data CONFIG.${TYPE}_relax_failed pair ij" &
+ "print 'STOP_WITH_CHECKPOINT' append relaxation_${TYPE}.status" &
+ "quit 1"
+write_data CONFIG.${TYPE}_stage0 pair ij
+write_dump cores cfg cfg/static_${TYPE}_stage0.cfge mass type xs ys zs id mol q &
+ modify element K Nb O K Nb O
+
+# Stage 1: K=100 eV/Angstrom^2 = 1602.176634 N/m.
+variable Ktether equal 100
+timestep 0.0002
+thermo ${dNout}
+thermo_modify flush yes
+minimize 0.0 ${Ftol_stage} ${Miniter_stage} ${Mineval_stage}
+# run 0 refreshes force and geometry computes without moving atoms.
+run 0
+if "$(v_Fmax <= v_Ftol_stage && c_Bmax < 1.0 && c_closemax == 0)" then &
+ "print 'PASS stage_1 Fmax_N=${Fmax_N} Bmax_m=${Bmax_m}' append relaxation_${TYPE}.status" &
+else &
+ "print 'FAIL stage_1; MD NOT STARTED' append relaxation_${TYPE}.status" &
+ "write_data CONFIG.${TYPE}_relax_failed pair ij" &
+ "print 'STOP_WITH_CHECKPOINT' append relaxation_${TYPE}.status" &
+ "quit 1"
+write_data CONFIG.${TYPE}_stage1 pair ij
+write_dump cores cfg cfg/static_${TYPE}_stage1.cfge mass type xs ys zs id mol q &
+ modify element K Nb O K Nb O
+
+# Stage 2: K=10 eV/Angstrom^2 = 160.2176634 N/m.
+variable Ktether equal 10
+timestep 0.0004
+thermo ${dNout}
+thermo_modify flush yes
+minimize 0.0 ${Ftol_stage} ${Miniter_stage} ${Mineval_stage}
+# run 0 refreshes force and geometry computes without moving atoms.
+run 0
+if "$(v_Fmax <= v_Ftol_stage && c_Bmax < 1.0 && c_closemax == 0)" then &
+ "print 'PASS stage_2 Fmax_N=${Fmax_N} Bmax_m=${Bmax_m}' append relaxation_${TYPE}.status" &
+else &
+ "print 'FAIL stage_2; MD NOT STARTED' append relaxation_${TYPE}.status" &
+ "write_data CONFIG.${TYPE}_relax_failed pair ij" &
+ "print 'STOP_WITH_CHECKPOINT' append relaxation_${TYPE}.status" &
+ "quit 1"
+write_data CONFIG.${TYPE}_stage2 pair ij
+write_dump cores cfg cfg/static_${TYPE}_stage2.cfge mass type xs ys zs id mol q &
+ modify element K Nb O K Nb O
+
+# Stage 3: K=1 eV/Angstrom^2 = 16.02176634 N/m.
+variable Ktether equal 1
+timestep 0.0004
+thermo ${dNout}
+thermo_modify flush yes
+minimize 0.0 ${Ftol_stage} ${Miniter_stage} ${Mineval_stage}
+# run 0 refreshes force and geometry computes without moving atoms.
+run 0
+if "$(v_Fmax <= v_Ftol_stage && c_Bmax < 1.0 && c_closemax == 0)" then &
+ "print 'PASS stage_3 Fmax_N=${Fmax_N} Bmax_m=${Bmax_m}' append relaxation_${TYPE}.status" &
+else &
+ "print 'FAIL stage_3; MD NOT STARTED' append relaxation_${TYPE}.status" &
+ "write_data CONFIG.${TYPE}_relax_failed pair ij" &
+ "print 'STOP_WITH_CHECKPOINT' append relaxation_${TYPE}.status" &
+ "quit 1"
+write_data CONFIG.${TYPE}_stage3 pair ij
+write_dump cores cfg cfg/static_${TYPE}_stage3.cfge mass type xs ys zs id mol q &
+ modify element K Nb O K Nb O
+
+# Stage 4: K=0.1 eV/Angstrom^2 = 1.602176634 N/m.
+variable Ktether equal 0.1
+timestep 0.0004
+thermo ${dNout}
+thermo_modify flush yes
+minimize 0.0 ${Ftol_stage} ${Miniter_stage} ${Mineval_stage}
+# run 0 refreshes force and geometry computes without moving atoms.
+run 0
+if "$(v_Fmax <= v_Ftol_stage && c_Bmax < 1.0 && c_closemax == 0)" then &
+ "print 'PASS stage_4 Fmax_N=${Fmax_N} Bmax_m=${Bmax_m}' append relaxation_${TYPE}.status" &
+else &
+ "print 'FAIL stage_4; MD NOT STARTED' append relaxation_${TYPE}.status" &
+ "write_data CONFIG.${TYPE}_relax_failed pair ij" &
+ "print 'STOP_WITH_CHECKPOINT' append relaxation_${TYPE}.status" &
+ "quit 1"
+write_data CONFIG.${TYPE}_stage4 pair ij
+write_dump cores cfg cfg/static_${TYPE}_stage4.cfge mass type xs ys zs id mol q &
+ modify element K Nb O K Nb O
+
+# Remove ALL temporary forces before checking the physical potential.
+unfix tether
+timestep 0.0004
+thermo ${dNout}
+thermo_modify flush yes
+minimize 0.0 ${Ftol_final} ${Miniter_final} ${Mineval_final}
+run 0
+if "$(v_Fmax <= v_Ftol_final && c_Bmax < 1.0 && c_closemax == 0)" then &
+ "print 'STATIC_PASS Fmax_N=${Fmax_N} Bmax_m=${Bmax_m}' append relaxation_${TYPE}.status" &
+else &
+ "print 'FAIL physical_potential; MD NOT STARTED' append relaxation_${TYPE}.status" &
+ "write_data CONFIG.${TYPE}_relax_failed pair ij" &
+ "print 'STOP_WITH_CHECKPOINT' append relaxation_${TYPE}.status" &
+ "quit 1"
+write_data CONFIG.${TYPE}_static pair ij
+write_dump cores cfg cfg/static_${TYPE}_final.cfge mass type xs ys zs id mol q &
+ modify element K Nb O K Nb O
+# Keep cheap force/bond guard in MD; no restraint is left active.
+uncompute closemax
+uncompute close
