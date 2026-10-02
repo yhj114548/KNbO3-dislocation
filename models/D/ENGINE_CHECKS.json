@@ -1,0 +1,62 @@
+{
+  "engine": {
+    "version": "LAMMPS 22 Jul 2025 Update 4",
+    "distribution": "Official PyPI lammps 2025.7.22.4.0 macOS arm64 wheel with local mpich 5.0.1.post1",
+    "wrapper": "/Users/yanghyeonjun/.codex/.chatgpt-projects/g-p-688827a0f8348191b097e50f265ef821/work_inspect/BD_runtime/lmp_local",
+    "scope": "Local work directory only; no global executable/configuration changed"
+  },
+  "small_fixture_smoke": {
+    "command": "../lmp_local -in IN_D -log grammar.log -screen grammar.screen",
+    "directory": "/Users/yanghyeonjun/.codex/.chatgpt-projects/g-p-688827a0f8348191b097e50f265ef821/work_inspect/BD_runtime/D_grammar",
+    "particle_count": 10,
+    "force_threshold_N": 1.602176634e-10,
+    "settle_steps": 2,
+    "NPT_equilibration_steps": 2,
+    "production_steps": 2,
+    "output_frequency_steps": 2,
+    "average_sampling": "1 1 1",
+    "potential_coefficients_unchanged": true,
+    "original_barostat_options_preserved": true,
+    "exit_code": 0,
+    "all_six_static_gates_and_MD_complete": true,
+    "fixture_IN_sha256": "f48a0fcd39a494389589b909ad8e37d6745785f91db4655537ad734b6a3456ad",
+    "source_IN_sha256": "87932b8b7bbbed9be58913ffbcc3b2cfe711977d9ca81dfca7c1c8b73b3680db",
+    "forced_failure": {
+      "directory": "/Users/yanghyeonjun/.codex/.chatgpt-projects/g-p-688827a0f8348191b097e50f265ef821/work_inspect/BD_runtime/D_failure",
+      "force_threshold_N": 1.602176634e-39,
+      "first_minimization_maxiter": 0,
+      "first_minimization_maxeval": 1,
+      "exit_code": 1,
+      "failure_checkpoint_written": true,
+      "failure_force_dump_written": true,
+      "MD_not_started": true
+    }
+  },
+  "velocity_pair_test": {
+    "command": "DYLD_LIBRARY_PATH=<local mpich lib> PYTHONPATH=work_inspect/BD_runtime python3 work_inspect/BD_runtime/test_velocity.py",
+    "particle_count": 10,
+    "pair_count": 5,
+    "zero_velocity_then_create_bias_yes_max_relative_speed_m_per_s": 1.6653345369377348e-14,
+    "old_second_create_command_erased_existing_relative_velocities": true,
+    "scale_bias_yes_max_relative_velocity_change_m_per_s": 2.220446049250313e-14,
+    "implementation_response": "In corrected B/D second create is removed; velocity scale Tmeas bias yes temp Tcs preserves pair relative motion to roundoff."
+  },
+  "full_system_initial_force_evaluation": {
+    "particle_count": 778140,
+    "temperature_K": 0.0,
+    "potential_energy_J": -1.966798870842076e-12,
+    "bond_energy_J": 0.0,
+    "real_space_coulomb_energy_J": 1.2732635177153196e-12,
+    "pressure_Pa": 4677558500.0,
+    "maximum_atomic_force_N": 1.3337181e-07,
+    "completed": true,
+    "configuration_sha256": "97e79d8b16e03ab3bb80a4fd22990080e2f995e66645c7b05abc4794e016c209",
+    "potential_sha256": "27b1801f19b293f60fb21d616d784d5727082b8fe34b2c2f598fac820fc2dcac",
+    "scope": "one initial full-system force/energy evaluation; no minimization or dynamics"
+  },
+  "limits": [
+    "Fixture tests validate supported commands, program flow, and pair velocity handling; not defect stability or convergence.",
+    "Full production trajectories and timestep convergence not run.",
+    "Artificial force thresholds/short runs exist only in BD_runtime fixtures; delivery input thresholds unchanged."
+  ]
+}
